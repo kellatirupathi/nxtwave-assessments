@@ -251,7 +251,7 @@
 <div id="lock-overlay">
   <h2 id="lock-title">Exam Locked</h2>
   <p id="lock-msg">Your exam session has ended.</p>
-  <button class="submit-now" id="reopen-btn">Reopen Form to Submit</button>
+  <button class="submit-now" id="reopen-btn">Continue Exam (Fullscreen)</button>
 </div>
 
 <script>
@@ -402,7 +402,7 @@
     timerEl.textContent = m + ':' + s;
     timerEl.classList.toggle('low',  remaining <= 300 && remaining > 60);
     timerEl.classList.toggle('crit', remaining <= 60);
-    if (remaining <= 0) lockExam('Exam Done', 'Your time is over. The exam session has ended and your activity has been recorded. Thank you for participating.');
+    if (remaining <= 0) lockExam('Time Over', 'Your time is up. Click below to return to fullscreen and continue the exam — your timer will restart.');
   }
 
   function updateWarnUI() {
@@ -434,9 +434,7 @@
     lockTitle.textContent = title;
     lockMsg.textContent = msg;
     lockEl.classList.add('show');
-    // Hide the reopen-form button on Time Over — the exam is fully done, no resubmission
-    if (reopenBtn) reopenBtn.style.display = (title === 'Exam Done' || title === 'Time Over') ? 'none' : '';
-    sendFinalSummary((title === 'Exam Done' || title === 'Time Over') ? 'time_over' : 'locked');
+    sendFinalSummary(title === 'Time Over' ? 'time_over' : 'locked');
   }
 
   // ====== WEBCAM ======
@@ -533,8 +531,20 @@
     } catch (e) {}
   }
 
-  reopenBtn.addEventListener('click', () => {
-    window.open(GOOGLE_FORM_URL, '_blank');
+  reopenBtn.addEventListener('click', async () => {
+    // Restart the exam: fullscreen + reset timer + continue
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (e) {
+      flash('Could not enter fullscreen — please press F11 manually.');
+    }
+    state.locked = false;
+    state.startedAt = Date.now();   // restart the timer to full duration
+    summarySent = false;            // allow a fresh summary on the next lock
+    persist();
+    lockEl.classList.remove('show');
+    updateWarnUI();
+    tick();
   });
 
   // ====== DETECTORS ======
