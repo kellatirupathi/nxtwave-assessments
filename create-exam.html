@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Create New Exam — Admin</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 28px 20px; background: #f1f3f4; color: #202124; }
+  h1 { color: #1a73e8; margin: 0 0 4px; }
+  .subtitle { color: #5f6368; font-size: 14px; margin-bottom: 20px; }
+  .card { background: #fff; padding: 22px 24px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom: 16px; }
+  details.card > summary { cursor: pointer; font-weight: 700; color: #1a73e8; outline: none; }
+  details.card[open] > summary { margin-bottom: 12px; }
+  label { display: block; margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: #202124; }
+  .help { font-weight: 400; color: #5f6368; font-size: 12px; }
+  input[type=text], input[type=url], input[type=number], input[type=password] {
+    width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; font-family: inherit;
+  }
+  input:focus { border-color: #1a73e8; outline: none; }
+  button { background: #137333; color: #fff; border: 0; padding: 11px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 14px; }
+  button:hover { background: #0b5d27; }
+  button:disabled { background: #9aa0a6; cursor: not-allowed; }
+  button.secondary { background: #1a73e8; }
+  button.secondary:hover { background: #1765cc; }
+  button.danger { background: #d93025; padding: 6px 12px; margin: 0; font-size: 12px; }
+  button.danger:hover { background: #b3261e; }
+  .status { margin-top: 12px; padding: 10px 13px; border-radius: 6px; font-size: 13px; }
+  .status.ok    { background: #e6f4ea; color: #137333; border: 1px solid #ceead6; }
+  .status.err   { background: #fce8e6; color: #d93025; border: 1px solid #f5c6c0; }
+  .status.info  { background: #e8f0fe; color: #1a73e8; border: 1px solid #d2e3fc; }
+  .url-box { margin-top: 10px; display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 12px; }
+  .url-box a { color: #1a73e8; word-break: break-all; flex: 1; text-decoration: none; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+  .url-box a:hover { text-decoration: underline; }
+  .url-box button { margin: 0; padding: 6px 14px; font-size: 12px; background: #1a73e8; }
+  .file-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-bottom: 1px solid #e0e0e0; font-size: 13px;
+  }
+  .file-row:last-child { border-bottom: 0; }
+  .file-row .name { flex: 1; font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+  .file-row a { color: #1a73e8; text-decoration: none; font-size: 12px; }
+  .file-row a:hover { text-decoration: underline; }
+  .size { color: #5f6368; font-size: 11px; }
+  .warn { background: #fef7e0; border-left: 4px solid #f29900; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: #5f4d00; }
+  code { background: #f1f3f4; padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #d93025; }
+</style>
+</head>
+<body>
+
+<h1>Create New Exam</h1>
+<p class="subtitle">Commit to GitHub → Netlify auto-deploys in ~1–2 minutes.</p>
+
+<div class="warn">
+  🔒 The GitHub token lives in Netlify env vars (server-side). This admin tool only knows the admin password — checked by the Netlify Function before any GitHub call.
+</div>
+
+<details class="card" id="setup-card">
+  <summary>⚙️ Admin Setup (one-time)</summary>
+  <label>Admin password <span class="help">(must match <code>ADMIN_PASSWORD</code> env var on Netlify)</span></label>
+  <input type="password" id="admin-pw" placeholder="Your admin password" autocomplete="current-password">
+  <label>Site base URL <span class="help">(e.g. <code>https://aquamarine-beignet-c58568.netlify.app</code>)</span></label>
+  <input type="url" id="site-url" placeholder="https://your-site.netlify.app">
+  <button class="secondary" id="ping-btn">Test Connection &amp; Save</button>
+  <div id="ping-status" class="status" style="display:none;"></div>
+</details>
+
+<div class="card">
+  <div id="tpl-status" class="status info">Loading template...</div>
+
+  <label>1. Output filename <span class="help">(no spaces, no .html — e.g. <code>companya-day1</code>)</span></label>
+  <input type="text" id="filename" placeholder="e.g. companya-day1" autocomplete="off">
+
+  <label>2. Google Form URL</label>
+  <input type="url" id="form-url" placeholder="https://docs.google.com/forms/d/e/1FAIp.../viewform" autocomplete="off">
+
+  <label>3. Exam duration in minutes</label>
+  <input type="number" id="minutes" value="60" min="1" max="600">
+
+  <label>4. Exam title</label>
+  <input type="text" id="title" placeholder="e.g. Company A — Aptitude Round" autocomplete="off">
+
+  <label>5. Apps Script Log URL</label>
+  <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+
+  <button id="generate">Generate Exam &amp; Deploy</button>
+  <div id="status" class="status" style="display:none;"></div>
+
+  <div id="url-display" style="display:none; margin-top: 14px;">
+    <strong style="font-size: 13px; color: #137333;">✅ Committed — Netlify deploys in ~1-2 minutes:</strong>
+    <div class="url-box">
+      <a id="live-url" href="#" target="_blank"></a>
+      <button id="copy-url">Copy</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <strong>📂 Current Exams on GitHub</strong>
+    <button class="secondary" id="refresh-files" style="margin:0; padding: 6px 14px; font-size: 12px;">Refresh</button>
+  </div>
+  <div id="file-list" style="margin-top: 12px;">
+    <p style="color: #5f6368; font-size: 13px; margin: 8px 0;">Click "Refresh" after entering the admin password.</p>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const STORAGE = { pw: 'adm_pw', site: 'adm_site', sheet: 'adm_sheet' };
+  const FN_URL = '/.netlify/functions/github';
+  const TEMPLATE_URL = 'exam-template.html';
+  const PROTECTED = ['index.html', 'exam-template.html', 'create-exam.html'];
+
+  let cachedTemplate = null;
+
+  if (localStorage.getItem(STORAGE.pw))    $('admin-pw').value  = localStorage.getItem(STORAGE.pw);
+  if (localStorage.getItem(STORAGE.site))  $('site-url').value  = localStorage.getItem(STORAGE.site);
+  if (localStorage.getItem(STORAGE.sheet)) $('sheet-url').value = localStorage.getItem(STORAGE.sheet);
+  if (!localStorage.getItem(STORAGE.pw)) $('setup-card').open = true;
+
+  (async function loadTemplate() {
+    const el = $('tpl-status');
+    try {
+      const res = await fetch(TEMPLATE_URL, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const text = await res.text();
+      if (text.indexOf('{{GOOGLE_FORM_URL}}') === -1) throw new Error('not a valid template');
+      cachedTemplate = text;
+      el.className = 'status ok';
+      el.textContent = '✅ Template loaded (' + text.length + ' bytes).';
+    } catch (e) {
+      el.className = 'status err';
+      el.textContent = '⚠️ Could not load exam-template.html — ' + e.message;
+      $('generate').disabled = true;
+    }
+  })();
+
+  function setStatus(elId, cls, msg) {
+    const el = $(elId);
+    el.style.display = 'block';
+    el.className = 'status ' + cls;
+    el.textContent = msg;
+  }
+
+  async function callFn(action, extra) {
+    const password = $('admin-pw').value.trim();
+    if (!password) throw new Error('Admin password not set');
+    const body = Object.assign({ password, action }, extra || {});
+    const res = await fetch(FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || ('HTTP ' + res.status));
+    return data;
+  }
+
+  $('ping-btn').addEventListener('click', async () => {
+    const pw = $('admin-pw').value.trim();
+    const site = $('site-url').value.trim();
+    if (!pw) return setStatus('ping-status', 'err', '⚠️ Admin password required.');
+    if (!/^https:\/\/.+/.test(site)) return setStatus('ping-status', 'err', '⚠️ Site base URL must start with https://');
+    setStatus('ping-status', 'info', '🔄 Testing...');
+    try {
+      const data = await callFn('ping');
+      localStorage.setItem(STORAGE.pw, pw);
+      localStorage.setItem(STORAGE.site, site);
+      setStatus('ping-status', 'ok', '✅ Connected to ' + data.owner + '/' + data.repo + '. Settings saved.');
+      refreshFiles();
+    } catch (e) {
+      setStatus('ping-status', 'err', '⚠️ ' + e.message);
+    }
+  });
+
+  $('generate').addEventListener('click', async () => {
+    $('url-display').style.display = 'none';
+    $('status').style.display = 'none';
+    if (!cachedTemplate) return setStatus('status', 'err', '⚠️ Template not loaded.');
+
+    const pw       = $('admin-pw').value.trim();
+    const siteUrl  = $('site-url').value.trim();
+    const filename = $('filename').value.trim();
+    const formUrl  = $('form-url').value.trim();
+    const minutes  = parseInt($('minutes').value, 10);
+    const title    = $('title').value.trim();
+    const sheetUrl = $('sheet-url').value.trim();
+
+    if (!pw)        { $('setup-card').open = true; return setStatus('status', 'err', '⚠️ Set admin password in Setup above.'); }
+    if (!siteUrl)   { $('setup-card').open = true; return setStatus('status', 'err', '⚠️ Set site base URL in Setup above.'); }
+    if (!filename || /\s/.test(filename) || filename.endsWith('.html'))
+      return setStatus('status', 'err', '⚠️ Filename: no spaces, no .html (e.g. companya-day1)');
+    if (PROTECTED.indexOf(filename + '.html') !== -1)
+      return setStatus('status', 'err', '⚠️ That filename is reserved — pick another.');
+    if (!/^https:\/\/docs\.google\.com\/forms\//.test(formUrl))
+      return setStatus('status', 'err', '⚠️ Google Form URL must start with https://docs.google.com/forms/');
+    if (!minutes || minutes < 1) return setStatus('status', 'err', '⚠️ Duration must be at least 1 minute.');
+    if (!title) return setStatus('status', 'err', '⚠️ Please enter an exam title.');
+    if (!sheetUrl || !/^https:\/\/script\.google\.com\/macros\//.test(sheetUrl))
+      return setStatus('status', 'err', '⚠️ Apps Script URL must start with https://script.google.com/macros/');
+
+    localStorage.setItem(STORAGE.sheet, sheetUrl);
+
+    const safeTitle = title.replace(/"/g, '\\"');
+    const output = cachedTemplate
+      .replace(/\{\{GOOGLE_FORM_URL\}\}/g, formUrl)
+      .replace(/\{\{EXAM_MINUTES\}\}/g, String(minutes))
+      .replace(/\{\{EXAM_TITLE\}\}/g, safeTitle)
+      .replace(/\{\{SHEET_LOG_URL\}\}/g, sheetUrl);
+
+    const path = filename + '.html';
+    setStatus('status', 'info', '🔄 Committing ' + path + ' to GitHub...');
+
+    try {
+      await callFn('put', { path, content: output, message: 'Add/update exam: ' + path });
+      const liveUrl = siteUrl.replace(/\/$/, '') + '/' + path;
+      setStatus('status', 'ok', '✅ Committed! Netlify is now building. Live in ~1-2 minutes.');
+      $('live-url').textContent = liveUrl;
+      $('live-url').href = liveUrl;
+      $('url-display').style.display = 'block';
+      refreshFiles();
+    } catch (e) {
+      setStatus('status', 'err', '⚠️ ' + e.message);
+    }
+  });
+
+  async function refreshFiles() {
+    const list = $('file-list');
+    list.innerHTML = '<p style="color:#5f6368;font-size:13px;">Loading...</p>';
+    try {
+      const files = await callFn('list');
+      if (!files.length) {
+        list.innerHTML = '<p style="color:#5f6368;font-size:13px;">No HTML files yet.</p>';
+        return;
+      }
+      const siteUrl = localStorage.getItem(STORAGE.site) || '';
+      list.innerHTML = '';
+      files.forEach(function(f) {
+        const row = document.createElement('div');
+        row.className = 'file-row';
+        const liveUrl = siteUrl.replace(/\/$/, '') + '/' + f.name;
+        const isProtected = PROTECTED.indexOf(f.name) !== -1;
+        row.innerHTML =
+          '<span class="name">' + esc(f.name) + '</span>' +
+          '<span class="size">' + Math.round(f.size/1024) + ' KB</span>' +
+          '<a href="' + esc(liveUrl) + '" target="_blank">Open</a>' +
+          (isProtected
+            ? '<span class="size">(system)</span>'
+            : '<button class="danger" data-path="' + esc(f.path) + '" data-name="' + esc(f.name) + '">Delete</button>');
+        list.appendChild(row);
+      });
+      list.querySelectorAll('button.danger').forEach(function(btn) {
+        btn.addEventListener('click', function() { deleteFile(btn.dataset.path, btn.dataset.name); });
+      });
+    } catch (e) {
+      list.innerHTML = '<p style="color:#d93025;font-size:13px;">⚠️ ' + esc(e.message) + '</p>';
+    }
+  }
+
+  async function deleteFile(path, name) {
+    if (!confirm('Delete "' + name + '"?\n\nThis removes the file from GitHub. The live URL returns 404 in ~1-2 minutes.')) return;
+    try {
+      await callFn('delete', { path: path });
+      refreshFiles();
+    } catch (e) {
+      alert('Delete failed: ' + e.message);
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+      return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+    });
+  }
+
+  $('copy-url').addEventListener('click', function() {
+    const txt = $('live-url').textContent;
+    navigator.clipboard.writeText(txt).then(function() {
+      $('copy-url').textContent = '✓ Copied';
+      setTimeout(function() { $('copy-url').textContent = 'Copy'; }, 1500);
+    });
+  });
+
+  $('refresh-files').addEventListener('click', refreshFiles);
+
+  if (localStorage.getItem(STORAGE.pw)) {
+    setTimeout(refreshFiles, 200);
+  }
+</script>
+
+</body>
+</html>

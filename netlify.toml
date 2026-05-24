@@ -1,0 +1,18 @@
+# Netlify build & deploy configuration
+# Static site at repo root, Functions in /netlify/functions
+
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+# Don't expose the function source code as a static file
+[[redirects]]
+  from = "/netlify/*"
+  to = "/index.html"
+  status = 404
+
+# Cache HTML for a short time so updates show fast
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=60, must-revalidate"
