@@ -402,7 +402,7 @@
     timerEl.textContent = m + ':' + s;
     timerEl.classList.toggle('low',  remaining <= 300 && remaining > 60);
     timerEl.classList.toggle('crit', remaining <= 60);
-    if (remaining <= 0) lockExam('Time Over', 'Your ' + EXAM_MINUTES + ' minutes are up. Click the button below to reopen the form and submit your answers immediately.');
+    if (remaining <= 0) lockExam('Exam Done', 'Your time is over. The exam session has ended and your activity has been recorded. Thank you for participating.');
   }
 
   function updateWarnUI() {
@@ -434,7 +434,9 @@
     lockTitle.textContent = title;
     lockMsg.textContent = msg;
     lockEl.classList.add('show');
-    sendFinalSummary(title === 'Time Over' ? 'time_over' : 'locked');
+    // Hide the reopen-form button on Time Over — the exam is fully done, no resubmission
+    if (reopenBtn) reopenBtn.style.display = (title === 'Exam Done' || title === 'Time Over') ? 'none' : '';
+    sendFinalSummary((title === 'Exam Done' || title === 'Time Over') ? 'time_over' : 'locked');
   }
 
   // ====== WEBCAM ======

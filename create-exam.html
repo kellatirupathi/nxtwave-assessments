@@ -6,103 +6,211 @@
 <title>Create New Exam — Admin</title>
 <style>
   * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Roboto, Arial, sans-serif; max-width: 820px; margin: 0 auto; padding: 28px 20px; background: #f1f3f4; color: #202124; }
-  h1 { color: #1a73e8; margin: 0 0 4px; }
+  html, body {
+    margin: 0; padding: 0; height: 100vh; width: 100vw;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    color: #202124; overflow: hidden;
+  }
+
+  .app { display: flex; height: 100vh; width: 100vw; }
+
+  /* ====== SIDEBAR (LEFT) ====== */
+  .sidebar {
+    width: 340px; flex-shrink: 0;
+    background: #fff; border-right: 1px solid #dadce0;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .sidebar-header {
+    padding: 14px 18px; border-bottom: 1px solid #dadce0;
+    display: flex; justify-content: space-between; align-items: center;
+    background: #f8f9fa;
+  }
+  .sidebar-header h2 { margin: 0; font-size: 15px; color: #1a73e8; }
+  .sidebar-header button {
+    background: #1a73e8; color: #fff; border: 0; padding: 6px 12px;
+    border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  .sidebar-header button:hover { background: #1765cc; }
+
+  .file-list { flex: 1; overflow-y: auto; }
+  .file-list p.placeholder { color: #5f6368; font-size: 12px; padding: 14px 18px; margin: 0; }
+
+  .file-row {
+    padding: 12px 18px; border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s;
+  }
+  .file-row:hover { background: #f8f9fa; }
+  .file-row.system { background: #fafafa; }
+  .file-row .name {
+    display: block; font-weight: 600; font-size: 13px;
+    color: #202124; margin-bottom: 4px; word-break: break-all;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  .file-row .meta {
+    display: flex; gap: 8px; align-items: center; font-size: 11px;
+  }
+  .file-row .size { color: #5f6368; }
+  .file-row .open-link { color: #1a73e8; text-decoration: none; font-weight: 600; }
+  .file-row .open-link:hover { text-decoration: underline; }
+  .file-row .delete-btn {
+    background: #d93025; color: #fff; border: 0; padding: 3px 9px;
+    border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer;
+    margin-left: auto;
+  }
+  .file-row .delete-btn:hover { background: #b3261e; }
+  .file-row .system-tag { color: #9aa0a6; font-size: 10px; margin-left: auto; font-style: italic; }
+
+  /* ====== MAIN AREA (RIGHT) ====== */
+  .main {
+    flex: 1; overflow-y: auto; background: #f1f3f4;
+    padding: 24px 36px;
+  }
+  h1 { color: #1a73e8; margin: 0 0 4px; font-size: 26px; }
   .subtitle { color: #5f6368; font-size: 14px; margin-bottom: 20px; }
-  .card { background: #fff; padding: 22px 24px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom: 16px; }
-  details.card > summary { cursor: pointer; font-weight: 700; color: #1a73e8; outline: none; }
+
+  .warn {
+    background: #fef7e0; border-left: 4px solid #f29900;
+    padding: 12px 16px; border-radius: 6px; margin-bottom: 16px;
+    font-size: 13px; color: #5f4d00;
+  }
+
+  .card {
+    background: #fff; padding: 22px 24px; border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom: 16px;
+  }
+  details.card > summary {
+    cursor: pointer; font-weight: 700; color: #1a73e8; outline: none;
+  }
   details.card[open] > summary { margin-bottom: 12px; }
-  label { display: block; margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: #202124; }
+
+  label {
+    display: block; margin: 14px 0 4px; font-size: 13px;
+    font-weight: 600; color: #202124;
+  }
   .help { font-weight: 400; color: #5f6368; font-size: 12px; }
   input[type=text], input[type=url], input[type=number], input[type=password] {
-    width: 100%; padding: 10px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; font-family: inherit;
+    width: 100%; padding: 10px; border: 1px solid #dadce0;
+    border-radius: 6px; font-size: 14px; font-family: inherit;
   }
   input:focus { border-color: #1a73e8; outline: none; }
-  button { background: #137333; color: #fff; border: 0; padding: 11px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 14px; }
-  button:hover { background: #0b5d27; }
-  button:disabled { background: #9aa0a6; cursor: not-allowed; }
-  button.secondary { background: #1a73e8; }
+
+  button.action {
+    background: #137333; color: #fff; border: 0; padding: 11px 22px;
+    border-radius: 6px; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 14px;
+  }
+  button.action:hover { background: #0b5d27; }
+  button.action:disabled { background: #9aa0a6; cursor: not-allowed; }
+  button.secondary {
+    background: #1a73e8; color: #fff; border: 0; padding: 10px 20px;
+    border-radius: 6px; font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-top: 12px;
+  }
   button.secondary:hover { background: #1765cc; }
-  button.danger { background: #d93025; padding: 6px 12px; margin: 0; font-size: 12px; }
-  button.danger:hover { background: #b3261e; }
-  .status { margin-top: 12px; padding: 10px 13px; border-radius: 6px; font-size: 13px; }
+
+  .status {
+    margin-top: 12px; padding: 10px 13px; border-radius: 6px; font-size: 13px;
+  }
   .status.ok    { background: #e6f4ea; color: #137333; border: 1px solid #ceead6; }
   .status.err   { background: #fce8e6; color: #d93025; border: 1px solid #f5c6c0; }
   .status.info  { background: #e8f0fe; color: #1a73e8; border: 1px solid #d2e3fc; }
-  .url-box { margin-top: 10px; display: flex; align-items: center; gap: 8px; background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px; padding: 10px 12px; }
-  .url-box a { color: #1a73e8; word-break: break-all; flex: 1; text-decoration: none; font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
-  .url-box a:hover { text-decoration: underline; }
-  .url-box button { margin: 0; padding: 6px 14px; font-size: 12px; background: #1a73e8; }
-  .file-row {
-    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-    border-bottom: 1px solid #e0e0e0; font-size: 13px;
+
+  .url-box {
+    margin-top: 10px; display: flex; align-items: center; gap: 8px;
+    background: #f8f9fa; border: 1px solid #dadce0; border-radius: 6px;
+    padding: 10px 12px;
   }
-  .file-row:last-child { border-bottom: 0; }
-  .file-row .name { flex: 1; font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
-  .file-row a { color: #1a73e8; text-decoration: none; font-size: 12px; }
-  .file-row a:hover { text-decoration: underline; }
-  .size { color: #5f6368; font-size: 11px; }
-  .warn { background: #fef7e0; border-left: 4px solid #f29900; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: #5f4d00; }
-  code { background: #f1f3f4; padding: 2px 6px; border-radius: 3px; font-size: 12px; color: #d93025; }
+  .url-box a {
+    color: #1a73e8; word-break: break-all; flex: 1; text-decoration: none;
+    font-family: ui-monospace, Consolas, monospace; font-size: 13px;
+  }
+  .url-box a:hover { text-decoration: underline; }
+  .url-box button {
+    margin: 0; padding: 6px 14px; font-size: 12px;
+    background: #1a73e8; color: #fff; border: 0; border-radius: 5px;
+    font-weight: 600; cursor: pointer;
+  }
+
+  code {
+    background: #f1f3f4; padding: 2px 6px; border-radius: 3px;
+    font-size: 12px; color: #d93025;
+  }
+
+  /* Mobile fallback */
+  @media (max-width: 800px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; max-height: 240px; border-right: 0; border-bottom: 1px solid #dadce0; }
+    .main { padding: 18px; }
+  }
 </style>
 </head>
 <body>
 
-<h1>Create New Exam</h1>
-<p class="subtitle">Commit to GitHub → Netlify auto-deploys in ~1–2 minutes.</p>
+<div class="app">
 
-<div class="warn">
-  🔒 The GitHub token lives in Netlify env vars (server-side). This admin tool only knows the admin password — checked by the Netlify Function before any GitHub call.
-</div>
-
-<details class="card" id="setup-card">
-  <summary>⚙️ Admin Setup (one-time)</summary>
-  <label>Admin password <span class="help">(must match <code>ADMIN_PASSWORD</code> env var on Netlify)</span></label>
-  <input type="password" id="admin-pw" placeholder="Your admin password" autocomplete="current-password">
-  <label>Site base URL <span class="help">(e.g. <code>https://aquamarine-beignet-c58568.netlify.app</code>)</span></label>
-  <input type="url" id="site-url" placeholder="https://your-site.netlify.app">
-  <button class="secondary" id="ping-btn">Test Connection &amp; Save</button>
-  <div id="ping-status" class="status" style="display:none;"></div>
-</details>
-
-<div class="card">
-  <div id="tpl-status" class="status info">Loading template...</div>
-
-  <label>1. Output filename <span class="help">(no spaces, no .html — e.g. <code>companya-day1</code>)</span></label>
-  <input type="text" id="filename" placeholder="e.g. companya-day1" autocomplete="off">
-
-  <label>2. Google Form URL</label>
-  <input type="url" id="form-url" placeholder="https://docs.google.com/forms/d/e/1FAIp.../viewform" autocomplete="off">
-
-  <label>3. Exam duration in minutes</label>
-  <input type="number" id="minutes" value="60" min="1" max="600">
-
-  <label>4. Exam title</label>
-  <input type="text" id="title" placeholder="e.g. Company A — Aptitude Round" autocomplete="off">
-
-  <label>5. Apps Script Log URL</label>
-  <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
-
-  <button id="generate">Generate Exam &amp; Deploy</button>
-  <div id="status" class="status" style="display:none;"></div>
-
-  <div id="url-display" style="display:none; margin-top: 14px;">
-    <strong style="font-size: 13px; color: #137333;">✅ Committed — Netlify deploys in ~1-2 minutes:</strong>
-    <div class="url-box">
-      <a id="live-url" href="#" target="_blank"></a>
-      <button id="copy-url">Copy</button>
+  <!-- ====== LEFT SIDEBAR: FILE LIST ====== -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>📂 Current Exams</h2>
+      <button id="refresh-files">Refresh</button>
     </div>
-  </div>
-</div>
+    <div class="file-list" id="file-list">
+      <p class="placeholder">Enter admin password &amp; test connection to load files.</p>
+    </div>
+  </aside>
 
-<div class="card">
-  <div style="display: flex; justify-content: space-between; align-items: center;">
-    <strong>📂 Current Exams on GitHub</strong>
-    <button class="secondary" id="refresh-files" style="margin:0; padding: 6px 14px; font-size: 12px;">Refresh</button>
-  </div>
-  <div id="file-list" style="margin-top: 12px;">
-    <p style="color: #5f6368; font-size: 13px; margin: 8px 0;">Click "Refresh" after entering the admin password.</p>
-  </div>
+  <!-- ====== RIGHT MAIN AREA ====== -->
+  <main class="main">
+
+    <h1>Create New Exam</h1>
+    <p class="subtitle">Commit to GitHub → Netlify auto-deploys in ~1–2 minutes.</p>
+
+    <div class="warn">
+      🔒 GitHub token lives in Netlify env vars (server-side). This tool only knows the admin password — checked by the Netlify Function before any GitHub call.
+    </div>
+
+    <details class="card" id="setup-card">
+      <summary>⚙️ Admin Setup (one-time)</summary>
+      <label>Admin password <span class="help">(must match <code>ADMIN_PASSWORD</code> env var)</span></label>
+      <input type="password" id="admin-pw" placeholder="Your admin password" autocomplete="current-password">
+      <label>Site base URL <span class="help">(e.g. <code>https://nxtwave-assessments.netlify.app</code>)</span></label>
+      <input type="url" id="site-url" placeholder="https://your-site.netlify.app">
+      <button class="secondary" id="ping-btn">Test Connection &amp; Save</button>
+      <div id="ping-status" class="status" style="display:none;"></div>
+    </details>
+
+    <div class="card">
+      <div id="tpl-status" class="status info">Loading template...</div>
+
+      <label>1. Output filename <span class="help">(no spaces, no .html — e.g. <code>companya-day1</code>)</span></label>
+      <input type="text" id="filename" placeholder="e.g. companya-day1" autocomplete="off">
+
+      <label>2. Google Form URL</label>
+      <input type="url" id="form-url" placeholder="https://docs.google.com/forms/d/e/1FAIp.../viewform" autocomplete="off">
+
+      <label>3. Exam duration in minutes</label>
+      <input type="number" id="minutes" value="60" min="1" max="600">
+
+      <label>4. Exam title</label>
+      <input type="text" id="title" placeholder="e.g. Company A — Aptitude Round" autocomplete="off">
+
+      <label>5. Apps Script Log URL</label>
+      <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/.../exec" autocomplete="off">
+
+      <button class="action" id="generate">Generate Exam &amp; Deploy</button>
+      <div id="status" class="status" style="display:none;"></div>
+
+      <div id="url-display" style="display:none; margin-top: 14px;">
+        <strong style="font-size: 13px; color: #137333;">✅ Committed — Netlify deploys in ~1-2 minutes:</strong>
+        <div class="url-box">
+          <a id="live-url" href="#" target="_blank"></a>
+          <button id="copy-url">Copy</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
 </div>
 
 <script>
@@ -227,34 +335,36 @@
 
   async function refreshFiles() {
     const list = $('file-list');
-    list.innerHTML = '<p style="color:#5f6368;font-size:13px;">Loading...</p>';
+    list.innerHTML = '<p class="placeholder">Loading...</p>';
     try {
       const files = await callFn('list');
       if (!files.length) {
-        list.innerHTML = '<p style="color:#5f6368;font-size:13px;">No HTML files yet.</p>';
+        list.innerHTML = '<p class="placeholder">No HTML files yet.</p>';
         return;
       }
       const siteUrl = localStorage.getItem(STORAGE.site) || '';
       list.innerHTML = '';
       files.forEach(function(f) {
-        const row = document.createElement('div');
-        row.className = 'file-row';
-        const liveUrl = siteUrl.replace(/\/$/, '') + '/' + f.name;
         const isProtected = PROTECTED.indexOf(f.name) !== -1;
+        const row = document.createElement('div');
+        row.className = 'file-row' + (isProtected ? ' system' : '');
+        const liveUrl = siteUrl.replace(/\/$/, '') + '/' + f.name;
         row.innerHTML =
           '<span class="name">' + esc(f.name) + '</span>' +
-          '<span class="size">' + Math.round(f.size/1024) + ' KB</span>' +
-          '<a href="' + esc(liveUrl) + '" target="_blank">Open</a>' +
-          (isProtected
-            ? '<span class="size">(system)</span>'
-            : '<button class="danger" data-path="' + esc(f.path) + '" data-name="' + esc(f.name) + '">Delete</button>');
+          '<div class="meta">' +
+            '<span class="size">' + Math.round(f.size/1024) + ' KB</span>' +
+            '<a class="open-link" href="' + esc(liveUrl) + '" target="_blank">Open ↗</a>' +
+            (isProtected
+              ? '<span class="system-tag">system</span>'
+              : '<button class="delete-btn" data-path="' + esc(f.path) + '" data-name="' + esc(f.name) + '">Delete</button>') +
+          '</div>';
         list.appendChild(row);
       });
-      list.querySelectorAll('button.danger').forEach(function(btn) {
+      list.querySelectorAll('button.delete-btn').forEach(function(btn) {
         btn.addEventListener('click', function() { deleteFile(btn.dataset.path, btn.dataset.name); });
       });
     } catch (e) {
-      list.innerHTML = '<p style="color:#d93025;font-size:13px;">⚠️ ' + esc(e.message) + '</p>';
+      list.innerHTML = '<p class="placeholder" style="color:#d93025;">⚠️ ' + esc(e.message) + '</p>';
     }
   }
 
