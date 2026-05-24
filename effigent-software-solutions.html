@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Assessment</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; font-family: 'Google Sans', Roboto, Arial, sans-serif; background: #f1f3f4; overflow: hidden; }
+
+  /* ====== START SCREEN ====== */
+  #start-screen {
+    position: fixed; inset: 0; background: linear-gradient(135deg, #1a73e8, #174ea6);
+    color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; z-index: 50;
+  }
+  #start-screen h1 { font-size: 30px; margin: 0 0 6px; }
+  #start-screen h2 { font-size: 16px; font-weight: 400; opacity: 0.9; margin: 0 0 24px; }
+  #start-screen .card {
+    background: #fff; color: #202124; padding: 24px 28px; border-radius: 14px;
+    width: 100%; max-width: 440px; box-shadow: 0 14px 36px rgba(0,0,0,0.25); text-align: left;
+  }
+  #start-screen .card h3 { margin: 0 0 12px; color: #d93025; font-size: 18px; }
+  #start-screen .rules { margin: 0 0 16px; padding-left: 18px; font-size: 13px; line-height: 1.6; color: #3c4043; }
+  #start-screen .rules li { margin-bottom: 4px; }
+  #start-screen label { display: block; font-size: 13px; margin: 10px 0 4px; color: #5f6368; font-weight: 600; }
+  #start-screen input[type="text"], #start-screen input[type="email"] {
+    width: 100%; padding: 9px 12px; border: 1px solid #dadce0; border-radius: 6px; font-size: 14px; outline: none;
+  }
+  #start-screen input:focus { border-color: #1a73e8; }
+  #start-screen .agree { display: flex; gap: 8px; margin: 14px 0 16px; align-items: flex-start; font-size: 12px; color: #5f6368; }
+  #start-screen button {
+    width: 100%; background: #d93025; color: #fff; border: 0; padding: 12px;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  #start-screen button:disabled { background: #9aa0a6; cursor: not-allowed; }
+  #start-screen button:not(:disabled):hover { background: #b3261e; }
+
+  /* ====== EXAM LAYOUT ====== */
+  #exam-wrap { display: none; flex-direction: column; height: 100vh; }
+  #exam-wrap.active { display: flex; }
+
+  #top-bar {
+    flex: 0 0 auto; background: #d93025; color: #fff; padding: 8px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); z-index: 10;
+  }
+  #top-bar .banner-text { font-weight: 600; letter-spacing: 0.3px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #top-bar .meta { display: flex; gap: 18px; align-items: center; flex: 0 0 auto; }
+  #top-bar .meta .cell { display: flex; flex-direction: column; align-items: center; min-width: 80px; }
+  #top-bar .meta .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.85; }
+  #top-bar .meta .val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #top-bar .meta .val.low { color: #fff8e1; }
+  #top-bar .meta .val.crit { color: #fff; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  #form-frame { flex: 1 1 auto; width: 100%; border: 0; display: block; background: #fff; }
+
+  /* ====== WEBCAM + WATERMARK ====== */
+  #cam {
+    position: fixed; bottom: 12px; right: 12px; width: 180px; height: 135px;
+    background: #000; border: 3px solid #d93025; border-radius: 8px;
+    z-index: 60; object-fit: cover; display: none;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+  }
+  #cam.active { display: block; }
+  #cam-label {
+    position: fixed; bottom: 150px; right: 14px; background: #d93025; color: #fff;
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px;
+    z-index: 61; display: none; text-transform: uppercase; letter-spacing: 0.6px;
+  }
+  #cam-label.active { display: block; }
+
+  .watermark {
+    position: fixed; pointer-events: none; z-index: 5;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    font-size: 13px; font-weight: 700; color: rgba(217, 48, 37, 0.16);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    transform: rotate(-25deg); user-select: none;
+    display: none; white-space: nowrap;
+  }
+  .watermark.active { display: block; }
+  #wm-1 { top: 22%; left: 8%;  }
+  #wm-2 { top: 48%; left: 55%; }
+  #wm-3 { top: 75%; left: 18%; }
+  #wm-4 { top: 35%; left: 70%; }
+
+  /* ====== FLASH WARNING ====== */
+  .flash {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    background: #d93025; color: #fff; padding: 18px 28px; border-radius: 10px;
+    font-size: 17px; font-weight: 600; z-index: 100; box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    animation: flashIn 0.22s ease-out; max-width: 80vw; text-align: center;
+  }
+  @keyframes flashIn { from { transform: translate(-50%, -50%) scale(0.7); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+
+  /* ====== RESUME SCREEN ====== */
+  #resume-screen {
+    position: fixed; inset: 0; background: linear-gradient(135deg, #137333, #0d652d);
+    color: #fff; display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; z-index: 55;
+  }
+  #resume-screen.show { display: flex; }
+  #resume-screen h1 { font-size: 28px; margin: 0 0 6px; }
+  #resume-screen .subtitle { font-size: 14px; opacity: 0.9; margin-bottom: 20px; max-width: 440px; }
+  #resume-screen .resume-card {
+    background: #fff; color: #202124; padding: 24px 28px; border-radius: 14px;
+    width: 100%; max-width: 440px; box-shadow: 0 14px 36px rgba(0,0,0,0.25);
+  }
+  #resume-screen .greeting { font-size: 18px; font-weight: 600; color: #137333; margin-bottom: 16px; text-align: center; }
+  #resume-screen .resume-stats {
+    display: flex; justify-content: space-around; padding: 14px 0;
+    border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; margin-bottom: 18px;
+  }
+  #resume-screen .stat-label { font-size: 11px; color: #5f6368; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  #resume-screen .stat-val { font-size: 24px; font-weight: 700; color: #202124; font-variant-numeric: tabular-nums; }
+  #resume-screen button.primary {
+    width: 100%; background: #137333; color: #fff; border: 0; padding: 12px;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  #resume-screen button.primary:hover { background: #0b5d27; }
+  #resume-screen .small-link {
+    margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.85);
+    text-decoration: underline; cursor: pointer; background: none; border: 0;
+  }
+
+  /* ====== FULLSCREEN-EXIT OVERLAY ====== */
+  #fs-overlay {
+    position: fixed; inset: 0; background: rgba(32,33,36,0.96); color: #fff;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; z-index: 190;
+  }
+  #fs-overlay.show { display: flex; }
+  #fs-overlay h2 { font-size: 28px; color: #ffb74d; margin: 0 0 12px; }
+  #fs-overlay p { font-size: 16px; max-width: 520px; line-height: 1.5; margin: 0 0 14px; }
+  #fs-overlay button {
+    background: #d93025; color: #fff; border: 0; padding: 14px 32px;
+    border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px;
+    box-shadow: 0 4px 14px rgba(217,48,37,0.4);
+  }
+  #fs-overlay button:hover { background: #b3261e; }
+  #fs-overlay .fs-count { margin-top: 16px; font-size: 13px; opacity: 0.7; }
+
+  /* ====== LOCK OVERLAY ====== */
+  #lock-overlay {
+    position: fixed; inset: 0; background: rgba(32,33,36,0.94); color: #fff;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; z-index: 200;
+  }
+  #lock-overlay.show { display: flex; }
+  #lock-overlay h2 { font-size: 32px; color: #ff7b72; margin: 0 0 12px; }
+  #lock-overlay p { font-size: 16px; max-width: 500px; line-height: 1.5; margin: 0 0 16px; }
+  #lock-overlay .submit-now {
+    background: #1a73e8; color: #fff; border: 0; padding: 14px 28px;
+    border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px;
+  }
+  #lock-overlay .submit-now:hover { background: #1765cc; }
+</style>
+</head>
+<body>
+
+<!-- ====== START SCREEN ====== -->
+<div id="start-screen">
+  <h1>Online Assessment</h1>
+  <h2 id="exam-subtitle">Duration: 60 minutes</h2>
+  <div class="card">
+    <h3>Exam Rules</h3>
+    <ul class="rules">
+      <li>Total time is <b id="rule-duration">60 minutes</b>. The form will close when time ends.</li>
+      <li>Do <b>not</b> switch tabs, minimise window, or exit fullscreen.</li>
+      <li>Every tab switch and suspicious action is <b>counted and reported</b> to the invigilator for review.</li>
+      <li>Do <b>not</b> use ChatGPT, Google, or any external help.</li>
+      <li>Right-click and copy are disabled during the exam.</li>
+      <li>Once you click <b>Start Exam</b>, the timer cannot be paused.</li>
+    </ul>
+
+    <label for="cand-name">Your full name</label>
+    <input type="text" id="cand-name" placeholder="e.g. Rahul Sharma" autocomplete="off">
+
+    <label for="cand-email">Your email</label>
+    <input type="email" id="cand-email" placeholder="you@example.com" autocomplete="off">
+
+    <label class="agree">
+      <input type="checkbox" id="agree">
+      <span>I have read the rules and agree to follow them. I understand that any malpractice can lead to rejection.</span>
+    </label>
+
+    <button id="start-btn" disabled>Start Exam (Fullscreen)</button>
+  </div>
+</div>
+
+<!-- ====== RESUME SCREEN (shown only if saved exam state exists) ====== -->
+<div id="resume-screen">
+  <h1>Welcome Back</h1>
+  <div class="subtitle">Your exam session was interrupted but your progress is saved. The timer continued in the background.</div>
+  <div class="resume-card">
+    <div class="greeting">Hi <span id="resume-name">Candidate</span>, ready to continue?</div>
+    <div class="resume-stats">
+      <div>
+        <div class="stat-label">Time Left</div>
+        <div class="stat-val" id="resume-time">--:--</div>
+      </div>
+      <div>
+        <div class="stat-label">Tab Switches</div>
+        <div class="stat-val" id="resume-warnings">0</div>
+      </div>
+    </div>
+    <button class="primary" id="resume-btn">Resume Exam (Fullscreen)</button>
+  </div>
+  <button class="small-link" id="resume-fresh">Start a fresh exam instead</button>
+</div>
+
+<!-- ====== EXAM AREA ====== -->
+<div id="exam-wrap">
+  <div id="top-bar">
+    <div class="banner-text">EXAM MODE ACTIVE — Do not switch tabs, copy, or exit fullscreen. <span id="who"></span></div>
+    <div class="meta">
+      <div class="cell">
+        <div class="label">Time Left</div>
+        <div class="val" id="timer">--:--</div>
+      </div>
+      <div class="cell">
+        <div class="label">Tab Switches</div>
+        <div class="val" id="warn">0</div>
+      </div>
+    </div>
+  </div>
+  <iframe id="form-frame" src="about:blank" allowfullscreen></iframe>
+</div>
+
+<!-- ====== WEBCAM ====== -->
+<div id="cam-label">LIVE</div>
+<video id="cam" autoplay muted playsinline></video>
+
+<!-- ====== WATERMARKS ====== -->
+<div class="watermark" id="wm-1"></div>
+<div class="watermark" id="wm-2"></div>
+<div class="watermark" id="wm-3"></div>
+<div class="watermark" id="wm-4"></div>
+
+<!-- ====== FULLSCREEN-EXIT OVERLAY ====== -->
+<div id="fs-overlay">
+  <h2>Fullscreen Exited</h2>
+  <p>This exam must be taken in <b>fullscreen mode</b>. You exited fullscreen — this action has been recorded.</p>
+  <p>Click the button below to return to fullscreen and continue your exam.</p>
+  <button id="fs-resume">Go to Fullscreen</button>
+  <div class="fs-count">Total tab/fullscreen exits so far: <span id="fs-count-val">0</span></div>
+</div>
+
+<!-- ====== LOCK OVERLAY ====== -->
+<div id="lock-overlay">
+  <h2 id="lock-title">Exam Locked</h2>
+  <p id="lock-msg">Your exam session has ended.</p>
+  <button class="submit-now" id="reopen-btn">Reopen Form to Submit</button>
+</div>
+
+<script>
+  // ============================================================
+  // CONFIG — EDIT THESE FOUR LINES ONLY
+  // ============================================================
+  const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf1l-Vk8USqp9FHyHaZ3iN7r0Wvl2_QqMcmXoXtuRiWaLwNhQ/viewform?usp=header";
+  const EXAM_MINUTES    = 90;
+  const EXAM_TITLE      = "EFFIGENT SOFTWARE SOLUTIONS";
+  const SHEET_LOG_URL   = "https://script.google.com/macros/s/AKfycbyWVtWUfTfxokCneyksh70uoSFxmM-rir_WMWxNYEOVtSugyOuLItAwk5KYCdJDIFw/exec";
+  const REQUIRE_CAMERA  = true; // logs camera denial only — never locks the exam
+  // ============================================================
+
+  const $ = (id) => document.getElementById(id);
+
+  const startScreen = $('start-screen');
+  const examWrap    = $('exam-wrap');
+  const timerEl     = $('timer');
+  const warnEl      = $('warn');
+  const whoEl       = $('who');
+  const frame       = $('form-frame');
+  const lockEl      = $('lock-overlay');
+  const lockTitle   = $('lock-title');
+  const lockMsg     = $('lock-msg');
+  const reopenBtn   = $('reopen-btn');
+
+  const nameInput  = $('cand-name');
+  const emailInput = $('cand-email');
+  const agreeBox   = $('agree');
+  const startBtn   = $('start-btn');
+
+  $('warn').textContent = '0';
+  $('exam-subtitle').textContent = 'Duration: ' + EXAM_MINUTES + ' minutes';
+  $('rule-duration').textContent = EXAM_MINUTES + ' minutes';
+  document.title = EXAM_TITLE;
+  // Update the h1 too if exam title was supplied
+  const titleEl = document.querySelector('#start-screen h1');
+  if (titleEl) titleEl.textContent = EXAM_TITLE;
+
+  function validStart() {
+    startBtn.disabled = !(nameInput.value.trim().length >= 2 &&
+                          /\S+@\S+\.\S+/.test(emailInput.value) &&
+                          agreeBox.checked);
+  }
+  ['input', 'change'].forEach(evt => {
+    nameInput.addEventListener(evt, validStart);
+    emailInput.addEventListener(evt, validStart);
+    agreeBox.addEventListener(evt, validStart);
+  });
+
+  startBtn.addEventListener('click', async () => {
+    if (!GOOGLE_FORM_URL || GOOGLE_FORM_URL.indexOf('PASTE_YOUR') === 0) {
+      alert('Configuration error: Google Form link is not set in this page. Contact the invigilator.');
+      return;
+    }
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (e) {
+      if (!confirm('Fullscreen could not be enabled. Continue anyway?')) return;
+    }
+    beginExam();
+  });
+
+  // ====== EXAM STATE ======
+  const state = {
+    startedAt: 0,
+    totalSec: EXAM_MINUTES * 60,
+    warnings: 0,
+    locked: false,
+    name: '',
+    email: ''
+  };
+  // Track warnings purely for display & logging; the exam is NOT locked from them.
+
+  // ====== COUNTERS (collected silently, sent in ONE summary row at the end) ======
+  const eventCounts = {
+    tabSwitches: 0,
+    windowBlurs: 0,
+    fullscreenExits: 0,
+    copyAttempts: 0,
+    cutAttempts: 0,
+    rightClickAttempts: 0,
+    devtoolsAttempts: 0,
+    shortcutBlocks: 0,
+    cameraStatus: 'not_started'
+  };
+  let summarySent = false;
+  let formLoadCount = 0;
+  let countingFormLoads = false;
+
+  function beginExam() {
+    state.name  = nameInput.value.trim();
+    state.email = emailInput.value.trim();
+    whoEl.textContent = '— ' + state.name;
+    showWatermark(state.name, state.email);
+    startCamera();
+
+    const stateKey = ('examWrapState:' + location.pathname);
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(stateKey) || 'null'); } catch (e) {}
+    if (saved && saved.email === state.email &&
+        (Date.now() - saved.startedAt) < state.totalSec * 1000) {
+      state.startedAt = saved.startedAt;
+      state.warnings  = saved.warnings || 0;
+    } else {
+      state.startedAt = Date.now();
+      state.warnings  = 0;
+    }
+    persist();
+
+    startScreen.style.display = 'none';
+    examWrap.classList.add('active');
+
+    // Detect form submission: each iframe navigation fires a 'load' event.
+    // 1st load = form rendered. 2nd load = candidate submitted (Google navigates to "response recorded").
+    frame.addEventListener('load', () => {
+      if (!countingFormLoads) return;
+      formLoadCount++;
+      if (formLoadCount >= 2) sendFinalSummary('manual_submit');
+    });
+
+    const sep = GOOGLE_FORM_URL.indexOf('?') === -1 ? '?' : '&';
+    frame.src = GOOGLE_FORM_URL + sep + 'embedded=true';
+    countingFormLoads = true;
+
+    updateWarnUI();
+    tick();
+    setInterval(tick, 500);
+    attachDetectors();
+    logToSheet('exam_start');
+  }
+
+  function persist() {
+    localStorage.setItem(('examWrapState:' + location.pathname), JSON.stringify({
+      startedAt: state.startedAt,
+      warnings: state.warnings,
+      email: state.email,
+      name: state.name
+    }));
+  }
+
+  function tick() {
+    if (state.locked) return;
+    const elapsed = Math.floor((Date.now() - state.startedAt) / 1000);
+    const remaining = Math.max(0, state.totalSec - elapsed);
+    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const s = String(remaining % 60).padStart(2, '0');
+    timerEl.textContent = m + ':' + s;
+    timerEl.classList.toggle('low',  remaining <= 300 && remaining > 60);
+    timerEl.classList.toggle('crit', remaining <= 60);
+    if (remaining <= 0) lockExam('Time Over', 'Your ' + EXAM_MINUTES + ' minutes are up. Click the button below to reopen the form and submit your answers immediately.');
+  }
+
+  function updateWarnUI() {
+    warnEl.textContent = String(state.warnings);
+    // Visual nudge as count grows, but never locks the exam
+    warnEl.classList.toggle('low',  state.warnings >= 3 && state.warnings < 6);
+    warnEl.classList.toggle('crit', state.warnings >= 6);
+  }
+
+  function flash(msg) {
+    const f = document.createElement('div');
+    f.className = 'flash';
+    f.textContent = msg;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 3500);
+  }
+
+  function addWarning(source) {
+    if (state.locked) return;
+    state.warnings++;
+    persist();
+    updateWarnUI();
+    logToSheet('warning: ' + source);
+    flash('Notice — ' + source + '. This has been reported. (Total: ' + state.warnings + ')');
+  }
+
+  function lockExam(title, msg) {
+    state.locked = true;
+    lockTitle.textContent = title;
+    lockMsg.textContent = msg;
+    lockEl.classList.add('show');
+    sendFinalSummary(title === 'Time Over' ? 'time_over' : 'locked');
+  }
+
+  // ====== WEBCAM ======
+  async function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      flash('Camera not supported on this browser.');
+      logToSheet('camera_unsupported');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const v = $('cam');
+      v.srcObject = stream;
+      v.classList.add('active');
+      $('cam-label').classList.add('active');
+      logToSheet('camera_started');
+    } catch (e) {
+      flash('Camera was not enabled. This has been reported to the invigilator.');
+      logToSheet('camera_denied: ' + (e && e.name ? e.name : 'unknown'));
+      // Only penalize camera denial in real (HTTPS) deployment, not local file:// testing
+      if (REQUIRE_CAMERA && location.protocol !== 'file:') {
+        setTimeout(() => addWarning('camera not enabled'), 1500);
+      }
+    }
+  }
+
+  // ====== WATERMARK ======
+  function showWatermark(name, email) {
+    const tag = (name || '') + ' · ' + (email || '');
+    ['wm-1', 'wm-2', 'wm-3', 'wm-4'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = tag;
+      el.classList.add('active');
+    });
+  }
+
+  // ====== EVENT COUNTING (in-memory only; no per-event sheet writes) ======
+  function logToSheet(event) {
+    if (!event) return;
+    if      (event.indexOf('tab hidden') !== -1)        eventCounts.tabSwitches++;
+    else if (event.indexOf('window lost') !== -1)       eventCounts.windowBlurs++;
+    else if (event.indexOf('fullscreen exited') !== -1) eventCounts.fullscreenExits++;
+    else if (event === 'copy_attempt')                  eventCounts.copyAttempts++;
+    else if (event === 'cut_attempt')                   eventCounts.cutAttempts++;
+    else if (event === 'right_click_attempt')           eventCounts.rightClickAttempts++;
+    else if (event === 'devtools_attempt')              eventCounts.devtoolsAttempts++;
+    else if (event.indexOf('shortcut_blocked') === 0)   eventCounts.shortcutBlocks++;
+    else if (event === 'camera_started')                eventCounts.cameraStatus = 'started';
+    else if (event.indexOf('camera_denied') === 0)      eventCounts.cameraStatus = 'denied';
+    else if (event === 'camera_unsupported')            eventCounts.cameraStatus = 'unsupported';
+    // exam_start / exam_locked / warning: are intentionally not counted here — already captured.
+  }
+
+  // ====== SEND ONE FINAL SUMMARY ROW ======
+  function sendFinalSummary(reason) {
+    if (summarySent) return;
+    if (!SHEET_LOG_URL) return;
+    if (!state.email || !state.startedAt) return;
+    summarySent = true;
+
+    const elapsedSec = Math.floor((Date.now() - state.startedAt) / 1000);
+    const payload = {
+      type: 'summary',
+      name: state.name,
+      email: state.email,
+      examStartedAt: new Date(state.startedAt).toISOString(),
+      examEndedAt: new Date().toISOString(),
+      elapsedSec: elapsedSec,
+      elapsedMin: Math.round(elapsedSec / 60 * 10) / 10,
+      timeLeftSec: Math.max(0, state.totalSec - elapsedSec),
+      finalEvent: reason,
+      totalWarnings: state.warnings,
+      tabSwitches: eventCounts.tabSwitches,
+      windowBlurs: eventCounts.windowBlurs,
+      fullscreenExits: eventCounts.fullscreenExits,
+      copyAttempts: eventCounts.copyAttempts,
+      cutAttempts: eventCounts.cutAttempts,
+      rightClickAttempts: eventCounts.rightClickAttempts,
+      devtoolsAttempts: eventCounts.devtoolsAttempts,
+      shortcutBlocks: eventCounts.shortcutBlocks,
+      cameraStatus: eventCounts.cameraStatus,
+      userAgent: navigator.userAgent
+    };
+
+    try {
+      fetch(SHEET_LOG_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      }).catch(() => {});
+    } catch (e) {}
+  }
+
+  reopenBtn.addEventListener('click', () => {
+    window.open(GOOGLE_FORM_URL, '_blank');
+  });
+
+  // ====== DETECTORS ======
+  function attachDetectors() {
+    let lastWarnAt = 0;
+    const debounce = (fn) => {
+      if (Date.now() - lastWarnAt < 1500) return;
+      lastWarnAt = Date.now();
+      fn();
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) debounce(() => addWarning('tab hidden / switched'));
+    });
+    window.addEventListener('blur', () => {
+      // Wait a tick so document.activeElement updates
+      setTimeout(() => {
+        // If focus moved INTO our own form iframe, that's the candidate answering — NOT a violation
+        if (document.activeElement === frame) return;
+        // If the tab is hidden, visibilitychange already handled it
+        if (document.hidden) return;
+        debounce(() => addWarning('window lost focus'));
+      }, 60);
+    });
+    document.addEventListener('fullscreenchange', () => {
+      const fsOverlay = document.getElementById('fs-overlay');
+      const fsCount = document.getElementById('fs-count-val');
+      if (!document.fullscreenElement) {
+        debounce(() => addWarning('fullscreen exited'));
+        if (!state.locked) {
+          if (fsCount) fsCount.textContent = String(state.warnings);
+          if (fsOverlay) fsOverlay.classList.add('show');
+        }
+      } else {
+        if (fsOverlay) fsOverlay.classList.remove('show');
+      }
+    });
+
+    const fsResumeBtn = document.getElementById('fs-resume');
+    if (fsResumeBtn) {
+      fsResumeBtn.addEventListener('click', async () => {
+        try {
+          await document.documentElement.requestFullscreen();
+          document.getElementById('fs-overlay').classList.remove('show');
+        } catch (e) {
+          flash('Could not enter fullscreen. Please press F11 manually.');
+        }
+      });
+    }
+
+    document.addEventListener('contextmenu', (e) => { e.preventDefault(); logToSheet('right_click_attempt'); });
+    document.addEventListener('copy', (e) => { e.preventDefault(); flash('Copying is disabled during the exam.'); logToSheet('copy_attempt'); });
+    document.addEventListener('cut',  (e) => { e.preventDefault(); logToSheet('cut_attempt'); });
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && ['c','u','s','p'].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        flash('That shortcut is disabled during the exam.');
+        logToSheet('shortcut_blocked: Ctrl+' + e.key.toUpperCase());
+      }
+      if (e.key === 'F12') { e.preventDefault(); flash('Developer tools are disabled during the exam.'); logToSheet('devtools_attempt'); }
+    });
+
+    window.addEventListener('beforeunload', (e) => {
+      if (!state.locked) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+  }
+
+  // ====== RESUME ON RELOAD ======
+  (function checkForResume() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(('examWrapState:' + location.pathname)) || 'null'); } catch (e) {}
+    if (!saved || !saved.startedAt || !saved.email || !saved.name) return;
+
+    const totalMs = EXAM_MINUTES * 60 * 1000;
+    const elapsed = Date.now() - saved.startedAt;
+
+    if (elapsed >= totalMs) {
+      // Time fully expired — clear and let normal start screen show
+      localStorage.removeItem(('examWrapState:' + location.pathname));
+      return;
+    }
+
+    const remaining = Math.max(0, Math.floor((totalMs - elapsed) / 1000));
+    const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+    const s = String(remaining % 60).padStart(2, '0');
+    $('resume-name').textContent = saved.name;
+    $('resume-time').textContent = m + ':' + s;
+    $('resume-warnings').textContent = String(saved.warnings || 0);
+
+    startScreen.style.display = 'none';
+    $('resume-screen').classList.add('show');
+  })();
+
+  $('resume-btn').addEventListener('click', async () => {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(('examWrapState:' + location.pathname)) || 'null'); } catch (e) {}
+    if (!saved) { location.reload(); return; }
+
+    try { await document.documentElement.requestFullscreen(); }
+    catch (e) { /* fs-overlay will catch this if it fails */ }
+
+    // Pre-fill inputs so beginExam picks them up cleanly
+    nameInput.value  = saved.name;
+    emailInput.value = saved.email;
+
+    $('resume-screen').classList.remove('show');
+    beginExam();
+  });
+
+  $('resume-fresh').addEventListener('click', () => {
+    if (confirm('Start a fresh exam? This will discard your saved progress (timer and tab-switch count will reset).')) {
+      localStorage.removeItem(('examWrapState:' + location.pathname));
+      location.reload();
+    }
+  });
+</script>
+
+</body>
+</html>
